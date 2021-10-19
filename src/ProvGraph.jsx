@@ -1,21 +1,58 @@
 import React, { useRef, useEffect } from 'react';
+import { uniq, sortBy } from 'lodash';
 import * as d3 from 'd3';
+import {
+  getNodeType,
+  getNodeYOrder,
+  getNodeSymbol,
+  getNodeSymbolSize,
+  getNodeCollideRadius,
+  getNodeColour,
+  getNodeLabelSize,
+  getNodeLabelOffset,
+} from './graphNodesConfig';
 
 const width = 600;
 const height = 400;
 
-const catColours = {
-  0: 'green',
-  1: 'lightgreen',
-  2: 'darkorange',
+const styles = {
+  svgContainer: {
+    display: 'inline-block',
+    position: 'relative',
+    width: '100%',
+    paddingBottom: '66%',
+    verticalAlign: 'middle',
+    overflow: 'hidden',
+  },
+  svgContent: {
+    display: 'inline-block',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
 };
 
 const ProvGraph = ({ data }) => {
   const ref = useRef();
   useEffect(() => {
-    const { nodes, links, numCats, numTimes } = data;
     const svgElement = d3.select(ref.current);
     svgElement.selectAll('*').remove();
+
+    const { nodes, links } = data;
+    // Categorise and order distinct types in data
+    const orderedTypes = sortBy(uniq(nodes.map(getNodeType)), getNodeYOrder);
+    const numTypes = orderedTypes.length;
+    const yOrder = orderedTypes.reduce((result, type, i) => {
+      result[type] = i;
+      return result;
+    }, {});
+    // Categorise and order distinct times in data
+    const orderedTimes = sortBy(uniq(nodes.map((d) => d.time)));
+    const numTimes = orderedTimes.length;
+    const xOrder = orderedTimes.reduce((result, time, i) => {
+      result[time] = i;
+      return result;
+    }, {});
 
     const simulation = d3
       .forceSimulation(nodes)
@@ -24,26 +61,23 @@ const ProvGraph = ({ data }) => {
         'x',
         d3
           .forceX()
-          .x((d) => (d.time + 1) * (width / (numTimes + 1)))
+          .x((d) => (xOrder[d.time] + 1) * (width / (numTimes + 1)))
           .strength(1.5),
       )
       .force(
         'y',
         d3
           .forceY()
-          .y((d) => (d.cat + 1) * (height / (numCats + 1)))
+          .y((d) => (yOrder[getNodeType(d)] + 1) * (height / (numTypes + 1)))
           .strength(1.5),
       )
-      .force(
-        'collision',
-        d3.forceCollide().radius((d) => 24 - d.cat * 9),
-      )
+      .force('collision', d3.forceCollide().radius(getNodeCollideRadius))
       .force(
         'link',
         d3
           .forceLink()
           .links(links)
-          .distance(height / (numCats + 1))
+          .distance(height / (numTypes + 1))
           .id((d) => d.id),
       );
 
@@ -74,14 +108,8 @@ const ProvGraph = ({ data }) => {
       .data(nodes)
       .enter()
       .append('path')
-      .attr(
-        'd',
-        d3
-          .symbol()
-          .type((d) => (d.cat === 2 ? d3.symbolCircle : d3.symbolTriangle))
-          .size((d) => 400 - d.cat * 190), // Size is square area
-      )
-      .attr('fill', (d) => catColours[d.cat]);
+      .attr('d', d3.symbol().type(getNodeSymbol).size(getNodeSymbolSize))
+      .attr('fill', getNodeColour);
 
     const textElements = svgElement
       .append('g')
@@ -90,8 +118,9 @@ const ProvGraph = ({ data }) => {
       .enter()
       .append('text')
       .text((d) => d.label)
-      .attr('font-size', (d) => 20 - d.cat * 10)
-      .attr('dx', (d) => 21 - d.cat * 9);
+      .attr('font-size', getNodeLabelSize)
+      .attr('dx', getNodeLabelOffset)
+      .attr('dominant-baseline', 'central');
 
     simulation.nodes(nodes).on('tick', () => {
       linkElements
@@ -119,23 +148,6 @@ const ProvGraph = ({ data }) => {
       />
     </div>
   );
-};
-
-const styles = {
-  svgContainer: {
-    display: 'inline-block',
-    position: 'relative',
-    width: '100%',
-    paddingBottom: '66%',
-    verticalAlign: 'middle',
-    overflow: 'hidden',
-  },
-  svgContent: {
-    display: 'inline-block',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
 };
 
 export default ProvGraph;
