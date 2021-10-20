@@ -96,6 +96,7 @@ const ProvGraph = ({ data }) => {
       .append('text')
       .attr('class', 'link-label')
       .attr('fill', 'black')
+      .attr('font-family', 'sans-serif')
       .style('font', 'normal 5px Arial')
       .attr('dy', '.35em')
       .attr('dx', '.35em')
@@ -118,6 +119,7 @@ const ProvGraph = ({ data }) => {
       .enter()
       .append('text')
       .text((d) => d.label)
+      .attr('font-family', 'sans-serif')
       .attr('font-size', getNodeLabelSize)
       .attr('dx', getNodeLabelOffset)
       .attr('dominant-baseline', 'central');
