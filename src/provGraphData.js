@@ -204,7 +204,7 @@ const provData5 = {
 		{ id: 'observation2', label: 'Grain weight', type: 'observation', time: 2 },
 		{
 			id: 'observation3',
-			label: 'Soil moisture',
+			label: 'Leaf area',
 			type: 'observation',
 			time: 4,
 		},

@@ -36,7 +36,7 @@ const nodeTypeConfig = {
     collideRadius: 12,
     colour: 'dodgerblue',
     labelSize: 8,
-    labelOffset: 13,
+    labelOffset: 10,
   },
   default: {
     yOrder: 4,

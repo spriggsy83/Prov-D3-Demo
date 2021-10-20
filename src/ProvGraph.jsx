@@ -81,15 +81,32 @@ const ProvGraph = ({ data }) => {
           .id((d) => d.id),
       );
 
+    // Definition for arrow markers, referenced in linkElement
+    svgElement
+      .append('defs')
+      .append('marker')
+      .attr('id', 'arrow')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', -20)
+      .attr('markerWidth', 15)
+      .attr('markerHeight', 15)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('stroke-width', 1)
+      .attr('stroke', 'grey')
+      .attr('fill', 'none')
+      .attr('d', 'M0,-5L10,0L0,5');
+
     const linkElements = svgElement
       .selectAll('line')
       .data(links)
       .enter()
       .append('g')
       .attr('class', 'link')
-      .append('line')
+      .append('polyline')
       .attr('stroke-width', 0.2)
-      .attr('stroke', 'grey');
+      .attr('stroke', 'grey')
+      .attr('marker-mid', 'url(#arrow)');
 
     var linkLabelsElements = svgElement
       .selectAll('.link')
@@ -111,6 +128,14 @@ const ProvGraph = ({ data }) => {
       .attr('d', d3.symbol().type(getNodeSymbol).size(getNodeSymbolSize))
       .attr('fill', getNodeColour);
 
+    const textBackgrounds = svgElement
+      .append('g')
+      .selectAll('rect')
+      .data(nodes)
+      .join('rect')
+      .style('fill', 'white')
+      .style('opacity', '1');
+
     const textElements = svgElement
       .append('g')
       .selectAll('text')
@@ -118,16 +143,34 @@ const ProvGraph = ({ data }) => {
       .enter()
       .append('text')
       .text((d) => d.label)
+      .attr('font-family', 'sans-serif')
       .attr('font-size', getNodeLabelSize)
       .attr('dx', getNodeLabelOffset)
-      .attr('dominant-baseline', 'central');
+      .attr('dominant-baseline', 'central')
+      .each(function (d) {
+        d.bbox = this.getBBox();
+      });
 
     simulation.nodes(nodes).on('tick', () => {
-      linkElements
-        .attr('x1', (link) => link.source.x)
+      linkElements.attr(
+        'points',
+        (d) =>
+          d.target.x +
+          ',' +
+          d.target.y +
+          ' ' +
+          ((2 * d.target.x) / 3 + d.source.x / 3) +
+          ',' +
+          ((2 * d.target.y) / 3 + d.source.y / 3) +
+          ' ' +
+          d.source.x +
+          ',' +
+          d.source.y,
+      );
+      /*.attr('x1', (link) => link.source.x)
         .attr('y1', (link) => link.source.y)
         .attr('x2', (link) => link.target.x)
-        .attr('y2', (link) => link.target.y);
+        .attr('y2', (link) => link.target.y);*/
       linkLabelsElements
         .attr('x', (d) => (d.source.x + d.target.x) / 2)
         .attr('y', (d) => (d.source.y + d.target.y) / 2);
@@ -135,7 +178,12 @@ const ProvGraph = ({ data }) => {
         'transform',
         (d) => 'translate(' + d.x + ',' + d.y + ')',
       );
-      textElements.attr('x', (node) => node.x).attr('y', (node) => node.y);
+      textElements.attr('x', (d) => d.x).attr('y', (d) => d.y);
+      textBackgrounds
+        .attr('x', (d) => d.x + getNodeLabelOffset(d))
+        .attr('y', (d) => d.y - d.bbox.height / 2)
+        .attr('width', (d) => d.bbox.width + 2)
+        .attr('height', (d) => d.bbox.height + 2);
     });
   }, [data]);
   return (
